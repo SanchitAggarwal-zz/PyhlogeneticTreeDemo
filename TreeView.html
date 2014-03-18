@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive Visualization component for Phylogenetic Treed">
+    <meta name="author" content="Sanchit Aggarwal">
+    <title>Demo to Visualize Phylogenetic Tree from Newick formatted string input.</title>
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <!-- Custom CSS for the '3 Col Portfolio' Template -->
+    <link href="css/Demo2.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <script>
+        var ClusteredMSA = new Array();
+        ClusteredMSA[0] = "(((Crotalus_oreganus_oreganus_cytochrome_b:0.00800,Crotalus_horridus_cytochrome_b:0.05866):0.04732,(Thamnophis_elegans_terrestris_cytochrome_b:0.00366,Thamnophis_atratus_cytochrome_b:0.00172):0.06255):0.00555,(Pituophis_catenifer_vertebralis_cytochrome_b:0.00552,Lampropeltis_getula_cytochrome_b:0.02035):0.05762,((Diadophis_punctatus_cytochrome_b:0.06486,Contia_tenuis_cytochrome_b:0.05342):0.01037,Hypsiglena_torquata_cytochrome_b:0.05346):0.00779);";
+        ClusteredMSA[1] = "((raccoon:19.19959,bear:6.80041):0.84600,((sea_lion:11.99700, seal:12.00300):7.52973,((monkey:100.85930,cat:47.14069):20.59201, weasel:18.87953):2.09460):3.87382,dog:25.46154);";
+        ClusteredMSA[2] = "(Bovine:0.69395,(Gibbon:0.36079,(Orang:0.33636,(Gorilla:0.17147,(Chimp:0.19268, Human:0.11927):0.08386):0.06124):0.15057):0.54939,Mouse:1.21460):0.10;";
+        var NewickFormatedTree = "";
+        var TreeLayout = "";
+        var InputString = "";
+        var firsttime = false;
+        var results = {};
+        var canvas;
+        function MSAChange(){
+            NewickFormatedTree = document.getElementById("ClusteredMSA").value;
+            console.log("MSAChange " + NewickFormatedTree);
+            if(NewickFormatedTree != ""){
+                document.getElementById("InputString").value = "";
+
+            }
+            Enable();
+        }
+        function InputChange(){
+            InputString = document.getElementById("InputString").value;
+            if(InputString!=""){
+                NewickFormatedTree = ClusteredMSA[parseInt(InputString)];
+                document.getElementById("ClusteredMSA").value = NewickFormatedTree;
+            }
+            else{
+                NewickFormatedTree = "";
+                document.getElementById("ClusteredMSA").value = "";
+            }
+            Enable();
+        }
+        function TreeChange(){
+            TreeLayout = document.getElementById("TreeLayout").value;
+            Enable();
+        }
+        function Enable(){
+            if(NewickFormatedTree != "" && TreeLayout != ""){
+                document.getElementById("Visualize").disabled = false;
+            }
+            else{
+                document.getElementById("Visualize").disabled = true;
+            }
+            document.getElementById("Save").disabled = true;
+        }
+        function visualize() {
+            console.log("In Visualize");
+            console.log("tree: "+TreeLayout);
+
+            var newick = Newick.parse(NewickFormatedTree);
+            var newickNodes = []
+            function buildNewickNodes(node, callback) {
+                newickNodes.push(node)
+                if (node.branchset) {
+                    for (var i=0; i < node.branchset.length; i++) {
+                        buildNewickNodes(node.branchset[i])
+                    }
+                }
+            }
+            buildNewickNodes(newick)
+			
+            if(TreeLayout == "Circular"){
+                console.log("Building Radial");
+                results = d3.phylogram.buildRadial('#TreeDiv', newick, {
+                    width: 400,
+                    skipLabels: true,
+                    firsttime: firsttime,
+                    phylogramtree:false
+                })
+            }
+            else if(TreeLayout == "Phylogram"){
+                console.log("Building Phylogram");
+                results = d3.phylogram.build('#TreeDiv', newick, {
+                    width: 300,
+                    height: 400,
+                    firsttime: firsttime,
+                    phylogramtree:true
+                });
+            }
+
+            NewickFormatedTree = "";
+			document.getElementById("Visualize").disabled = true;
+            document.getElementById("Save").disabled = false;
+            firsttime = true;
+        }
+        function SaveTree(){
+            canvas = document.getElementById('Tree_Canvas');
+            var sourceSVG = document.getElementById('Tree');
+            sourceSVG = sourceSVG.innerHTML;
+            canvg(canvas, sourceSVG);
+            var img = new Image();
+            var img_url = canvas.toDataURL('image/png');
+            img.src = img_url;
+            var savecanvas = document.createElement('a');
+            savecanvas.href = canvas.toDataURL('image/png').replace('image/png');
+            savecanvas.download= "Download.png";
+            document.body.appendChild(savecanvas);
+            savecanvas.click();
+//            var sourceSVG = document.getElementById('Tree');
+//            var sourceSVG = results.vis[0][0];
+//            console.log(sourceSVG);
+//            // https://developer.mozilla.org/en/XMLSerializer
+//            svg_xml = (new XMLSerializer()).serializeToString(sourceSVG);
+//            var ctx = canvas.getContext('2d');
+//            console.log(svg_xml);
+//            this is just a JavaScript (HTML) image
+//            var img = new Image();
+//            // http://en.wikipedia.org/wiki/SVG#Native_support
+//            // https://developer.mozilla.org/en/DOM/window.btoa
+//            img.src = "data:image/svg+xml;base64," + btoa(svg_xml);
+//            img.onload = function() {
+//                // after this, Canvas’ origin-clean is DIRTY
+//                ctx.drawImage(img, 0, 0);
+//            }
+//            var savecanvas = document.createElement('a');
+//            savecanvas.href = canvas.toDataURL('image/png').replace('image/png');
+//            savecanvas.download= "Download.png";
+//            document.body.appendChild(savecanvas);
+//            savecanvas.click();
+        }
+    </script>
+</head>
+<body>
+<nav class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#"><i class="fa fa-sitemap"></i> Phylogenetic Tree Visualization</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav pull-right">
+                <li><a href="https://github.com/SanchitAggarwal/PyhlogeneticTree" role="button"><i class="fa fa-link"></i> Matlab Demo</a></li>
+                <li><a href="#AboutDemo" role="button" data-toggle="modal"><i class="glyphicon glyphicon-info-sign"></i> About Demo</a></li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container -->
+</nav>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <form class="form-inline page-header" role="form">
+                <div class="form-group">
+                    <label class="sr-only" for="InputString">Input String</label>
+                    <select class="form-control" id="InputString" placeholder="Input String" onChange="InputChange();">
+                        <option value="">--Input String--</option>
+                        <option value="0">Example 1</option>
+                        <option value="1">Example 2</option>
+                        <option value="2">Example 3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="TreeLayout">TreeLayout</label>
+                    <select class="form-control" id="TreeLayout" placeholder="Tree Layout" onChange="TreeChange();">
+                        <option value="">--Tree Layout--</option>
+                        <option value="Phylogram">Phylogram</option>
+                        <option value="Circular">Circular Dendogram</option>
+                    </select>
+                </div>
+                <div class="pull-right">
+                    <button id="Visualize" type="button" class="btn btn-primary" onclick="visualize()" disabled>Visualize</button>
+                    <button id="Save" type="button" class="btn btn-default" onclick="SaveTree()" disabled>Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div id="String" class="col-md-4">
+            <label class="sr-only" for="ClusteredMSA">Newick Formatted Tree Input</label>
+            <textarea type="text" rows="20" cols="80" multiple="true" class="form-control" id="ClusteredMSA" placeholder="Newick Formatted Tree Input" onChange="MSAChange();"></textarea>
+        </div>
+        <div id="TreeDiv" class="col-md-offset-2 col-md-6">
+        </div>
+    </div>
+    <div class="row">
+        <canvas id="Tree_Canvas" width="860" height="900"></canvas>
+    </div>
+</div><!-- /.container -->
+
+<div class="container">
+    <hr>
+    <footer>
+        <div class="row">
+            <div class="col-md-6">
+                <p>Copyright &copy; Sanchit Aggarwal 2014</p>
+            </div>
+
+            <div class="col-md-6">
+                <p class="pull-right">Developers : Sanchit Aggarwal</p>
+            </div>
+        </div>
+    </footer>
+</div><!-- /.container -->
+
+<div class="modal fade" id="AboutDemo" tabindex="-1" role="dialog" aria-labelledby="instructionsModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                <h4 class="modal-title">Demo Information</h4>
+            </div>
+            <div class="modal-body">
+                <ul>
+                    <li>This Demo is for visualizing Phylogenetic Trees</li>
+                    <li><b>Tree Layout:</b> To Select different layouts such as circular dendogram, radial, cladograms, phylogram etc for phylogenetic tree.<br></li>
+                    <li><b>Input String:</b> Input data is a Newick-formatted string tree from a
+                        clustalw/NJ  multiple sequence alignment on some sequences or Select the given <b>Examples</b></li>
+                    <li>The Tree is visualized on the canvas using D3 libraries and can be exported in jpeg format.</li>
+                    <li>Click on Save button to export the tree into jpeg format</li>
+                    <li>The Demo is build using tutorial given <a href="http://www.jasondavies.com/tree-of-life/">Here</a></li>
+                    <li><b>The Full Component will have all the features as described in my proposal</b></li>
+                    <li>A javascript API which can be used to embed this component into any scenario/project.</li>
+                </ul>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- javascript -->
+<script src="js/jquery.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="js/canvas2image.js"></script>
+<script src="js/base64.js"></script>
+<script src="http://d3js.org/d3.v3.min.js" type="text/javascript"></script>
+<script src="js/newick.js" type="text/javascript"></script>
+<script src="js/PhyloTree.js" type="text/javascript"></script>
+<script src="js/FileSaver.js" type="text/javascript"></script>
+<script src="js/rgbcolor.js" type="text/javascript"></script>
+<script src="js/canvg.js" type="text/javascript"></script>
+<script src="js/StackBlur.js" type="text/javascript"></script>
+</body>
+
+</html>
